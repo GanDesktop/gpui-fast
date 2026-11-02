@@ -12,3 +12,7 @@ remain inside GPUI. No rendering or layout optimization is changed.
 
 Apply the `gpui-fast` and `gpui-fast-linux` overrides together and enable
 `gpui-kit/gpui-fast`. The original package names and version are preserved.
+
+## File-drop input modality
+
+External file Entered, Pending and Submit events restore mouse input modality before dispatch. Previously, dropping files after keyboard input left hover-based drop hit-testing disabled. GDS exercises this through a live PTY test that drops a folder from Files, presses Enter, then drops an external file and verifies both inputs.
