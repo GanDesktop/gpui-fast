@@ -1290,6 +1290,15 @@ pub trait PlatformWindow: HasWindowHandle + HasDisplayHandle {
         detail: Option<&str>,
         answers: &[PromptButton],
     ) -> Option<oneshot::Receiver<usize>>;
+    /// Associate a portal window identifier with this window.
+    fn set_external_parent(&self, _parent: &str) -> anyhow::Result<()> {
+        anyhow::bail!("external window parenting is unavailable on this platform")
+    }
+    /// Activate using the caller's startup/activation token.
+    fn activate_with_token(&self, _token: &str) -> anyhow::Result<()> {
+        self.activate();
+        Ok(())
+    }
     fn activate(&self);
     /// Requests that the operating system draw attention to this window.
     fn request_attention(&self) {}

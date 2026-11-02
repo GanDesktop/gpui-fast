@@ -6977,6 +6977,16 @@ impl Window {
     }
 
     /// Focus the current window and bring it to the foreground at the platform level.
+    /// Associate an external portal window identifier with this window.
+    pub fn set_external_parent(&self, parent: &str) -> anyhow::Result<()> {
+        self.platform_window.set_external_parent(parent)
+    }
+
+    /// Activate using an external startup or Wayland activation token.
+    pub fn activate_with_token(&self, token: &str) -> anyhow::Result<()> {
+        self.platform_window.activate_with_token(token)
+    }
+
     pub fn activate_window(&self) {
         self.platform_window.activate();
     }
