@@ -588,6 +588,30 @@ pub trait Platform: 'static {
     fn read_from_clipboard(&self) -> Option<ClipboardItem>;
     fn write_to_clipboard(&self, item: ClipboardItem);
 
+    /// Whether this connection supports explicit clipboard MIME representations.
+    fn supports_clipboard_mime(&self) -> bool {
+        false
+    }
+
+    /// Read requested representations from one selection. The byte limit covers all formats.
+    fn read_clipboard_mime(
+        &self,
+        _types: Vec<String>,
+        _limit: usize,
+    ) -> Task<Result<Option<ClipboardMimeOffer>, ClipboardAccessError>> {
+        Task::ready(Err(ClipboardAccessError::Unavailable))
+    }
+
+    /// Publish representations, or clear the selection when empty. An expected offer id
+    /// prevents delayed cut cleanup from replacing a newer selection.
+    fn write_clipboard_mime(
+        &self,
+        _entries: Vec<ClipboardMime>,
+        _expected: Option<u64>,
+    ) -> Result<(), ClipboardAccessError> {
+        Err(ClipboardAccessError::Unavailable)
+    }
+
     /// Reads the clipboard, resolving once its contents are available.
     ///
     /// Most platforms read synchronously and return a ready task. Platforms
@@ -3123,6 +3147,51 @@ pub enum CursorStyle {
     /// corresponds to the CSS cursor value `context-menu`
     ContextualMenu,
 }
+
+/// One representation of a clipboard selection, without application-specific decoding.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClipboardMime {
+    /// The advertised MIME type.
+    pub mime_type: String,
+    /// Unmodified bytes in this representation.
+    pub bytes: Vec<u8>,
+}
+
+/// Representations read from a single selection on the application's display connection.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClipboardMimeOffer {
+    /// Connection-local revision, usable only with the same App's conditional write.
+    pub id: u64,
+    /// The requested representations offered by the source.
+    pub entries: Vec<ClipboardMime>,
+}
+
+/// Failure to access a window clipboard or transfer an offered representation.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ClipboardAccessError {
+    /// The active display backend does not provide MIME access.
+    Unavailable,
+    /// The application has no focused window or valid input serial.
+    NotFocused,
+    /// A conditional update refers to a selection that has been replaced.
+    Changed,
+    /// Transport, timeout, or payload size failure.
+    Transfer(String),
+}
+
+impl std::fmt::Display for ClipboardAccessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unavailable => f.write_str("clipboard MIME access is unavailable"),
+            Self::NotFocused => {
+                f.write_str("clipboard access requires a focused application window")
+            }
+            Self::Changed => f.write_str("clipboard selection changed before it could be updated"),
+            Self::Transfer(message) => write!(f, "clipboard transfer failed: {message}"),
+        }
+    }
+}
+impl std::error::Error for ClipboardAccessError {}
 
 /// A clipboard item that should be copied to the clipboard
 #[derive(Clone, Debug, Eq, PartialEq)]

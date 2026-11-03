@@ -1833,6 +1833,33 @@ impl App {
         self.platform.button_layout()
     }
 
+    /// Whether the active display connection supports explicit MIME clipboard access.
+    pub fn supports_clipboard_mime(&self) -> bool {
+        self.platform.supports_clipboard_mime()
+    }
+
+    /// Read requested MIME representations from one selection without blocking the UI.
+    pub fn read_clipboard_mime(
+        &self,
+        types: Vec<String>,
+        limit: usize,
+    ) -> Task<Result<Option<crate::ClipboardMimeOffer>, crate::ClipboardAccessError>> {
+        self.platform.read_clipboard_mime(types, limit)
+    }
+
+    /// Publish MIME representations. Empty entries clear the selection.
+    /// Pass the id from a preceding read when updating that selection conditionally.
+    ///
+    /// # Errors
+    /// Reports unavailable access, missing window focus, or a replaced selection.
+    pub fn write_clipboard_mime(
+        &self,
+        entries: Vec<crate::ClipboardMime>,
+        expected: Option<u64>,
+    ) -> Result<(), crate::ClipboardAccessError> {
+        self.platform.write_clipboard_mime(entries, expected)
+    }
+
     /// Reads data from the platform clipboard.
     pub fn read_from_clipboard(&self) -> Option<ClipboardItem> {
         self.platform.read_from_clipboard()
